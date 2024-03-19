@@ -1,5 +1,6 @@
 import shutil
 import magic
+import os
 from typing import List
 from fastapi import FastAPI, UploadFile, File, HTTPException, status
 
@@ -10,7 +11,10 @@ SUPPORTED_FILE_TYPES = {
 }
 
 @app.post("/upload")
-async def upload_image(files: List[UploadFile] = File(...)):
+async def upload_image(files: List[UploadFile] = File(...), folder_path: str = 'uploads'):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
     if not files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,7 +30,7 @@ async def upload_image(files: List[UploadFile] = File(...)):
                 detail=f'Unsupported file type: {file_type}. Supported types are {SUPPORTED_FILE_TYPES}'
             )
         
-        with open(f'{img.filename}', "wb") as buffer:
+        with open(os.path.join(folder_path, img.filename), "wb") as buffer:
             shutil.copyfileobj(img.file, buffer)
 
-    return {"sucess": True, 'file_name': img.filename}
+    return {"success": True, 'file_names': [img.filename for img in files]}
